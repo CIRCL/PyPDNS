@@ -1,0 +1,7 @@
+*.pyc
+build/
+dist/
+pypdns.egg-info/
+virtenv/
+
+pypdns/api_key.py
