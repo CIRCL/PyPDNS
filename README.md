@@ -10,7 +10,7 @@ Example
 
 ~~~~
 import pypdns
-pypdns.PyPDNS(basic_auth=('username','yourpassword'))
+x = pypdns.PyPDNS(basic_auth=('username','yourpassword'))
 print (x.query('www.microsoft.com')[0]['rdata'])
 ~~~~
 
