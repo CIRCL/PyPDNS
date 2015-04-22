@@ -39,6 +39,8 @@ class PyPDNS(object):
         if sort_by not in sort_choice:
             raise Exception('You can only sort by ' + ', '.join(sort_choice))
         response = self.session.get('{}/{}' .format(self.url, q))
+        if response.status_code != 200:
+            raise Exception('HTTP error authentication incorrect?')
         to_return = []
         for l in response.text.split('\n'):
             if len(l) == 0:
