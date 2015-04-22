@@ -22,5 +22,5 @@ setup(
         'Topic :: Security',
         'Topic :: Internet',
     ],
-    install_requires=['requests'],
+    install_requires=['requests', 'requests-cache'],
 )
