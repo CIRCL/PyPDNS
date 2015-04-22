@@ -5,6 +5,15 @@ Client API to query any Passive DNS implementation following the Passive DNS - C
 
 * https://datatracker.ietf.org/doc/draft-dulaunoy-dnsop-passive-dns-cof/
 
+Example
+=======
+
+~~~~
+import pypdns
+pypdns.PyPDNS(basic_auth=('username','yourpassword'))
+print (x.query('www.microsoft.com')[0]['rdata'])
+~~~~
+
 Passive DNS Services
 ====================
 
