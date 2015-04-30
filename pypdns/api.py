@@ -20,9 +20,9 @@ class PyPDNS(object):
 
         if enable_cache is True:
             requests_cache.install_cache()
-	    requests_cache.install_cache(cache_file, backend='sqlite', expire_after=cache_expire_after)
+            requests_cache.install_cache(cache_file, backend='sqlite', expire_after=cache_expire_after)
             self.session = requests_cache.CachedSession()
-	else:
+        else:
             self.session = requests.Session()
         if basic_auth is not None:
             # basic_auth has do be a tuple ('user_name', 'password')
@@ -32,7 +32,6 @@ class PyPDNS(object):
         else:
             # No authentication defined.
             pass
-
 
     def query(self, q, sort_by='time_last'):
         logger.info("start query() q=[%s]", q)

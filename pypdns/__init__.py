@@ -1,1 +1,1 @@
-from api import PyPDNS
+from .api import PyPDNS
