@@ -13,13 +13,14 @@ setup(
     packages=['pypdns'],
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Telecommunications Industry',
-        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Security',
         'Topic :: Internet',
     ],
-    install_requires=['requests'],
+    install_requires=['requests-cache'],
 )
