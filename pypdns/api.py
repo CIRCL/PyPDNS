@@ -4,7 +4,11 @@
 import datetime
 import json
 import requests
-import requests_cache
+try:
+    import requests_cache
+    HAS_CACHE = True
+except ImportError:
+    HAS_CACHE = False
 import logging
 logger = logging
 
@@ -16,10 +20,11 @@ class PyPDNS(object):
     def __init__(self, url='https://www.circl.lu/pdns/query', basic_auth=None,
                  auth_token=None, enable_cache=False, cache_expire_after=604800, cache_file='/tmp/pdns.cache'):
         self.url = url
+        if enable_cache and not HAS_CACHE:
+            raise Exception('Please install requests_cache if you want to use the caching capabilities.')
         self.enable_cache = enable_cache
 
         if enable_cache is True:
-            requests_cache.install_cache()
             requests_cache.install_cache(cache_file, backend='sqlite', expire_after=cache_expire_after)
             self.session = requests_cache.CachedSession()
         else:
