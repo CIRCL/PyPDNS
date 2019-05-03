@@ -2,6 +2,10 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), 'r') as f:
+    long_description = f.read()
+
 setup(
     name='pypdns',
     version='1.4',
@@ -9,7 +13,14 @@ setup(
     author_email='raphael.vinot@circl.lu',
     maintainer='Raphaël Vinot',
     url='https://github.com/CIRCL/PyPDNS',
+    project_urls={
+        'Documentation': 'http://pymisp.readthedocs.io',
+        'Source': 'https://github.com/MISP/PyMISP',
+        'Tracker': 'https://github.com/MISP/PyMISP/issues',
+    },
     description='Python API for PDNS.',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=['pypdns'],
     classifiers=[
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
