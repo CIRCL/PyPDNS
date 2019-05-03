@@ -1,0 +1,18 @@
+language: python
+
+python:
+  - "3.5"
+  - "3.6"
+  - "3.6-dev"
+  - "3.7-dev"
+
+install:
+    - pip install pipenv
+    - pipenv install --dev
+
+script:
+    - pipenv run nosetests --with-coverage --cover-package=pypdns tests/test.py
+
+after_success:
+    - pipenv run codecov
+    - pipenv run coveralls

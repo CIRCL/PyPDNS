@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='pypdns',
-    version='1.3',
+    version='1.4',
     author='Raphaël Vinot',
     author_email='raphael.vinot@circl.lu',
     maintainer='Raphaël Vinot',
@@ -17,7 +17,6 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Telecommunications Industry',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Topic :: Security',
         'Topic :: Internet',
