@@ -16,9 +16,9 @@ setup(
     maintainer='Raphaël Vinot',
     url='https://github.com/CIRCL/PyPDNS',
     project_urls={
-        'Documentation': 'http://pymisp.readthedocs.io',
-        'Source': 'https://github.com/MISP/PyMISP',
-        'Tracker': 'https://github.com/MISP/PyMISP/issues',
+        'Documentation': 'https://github.com/CIRCL/PyPDNS',
+        'Source': 'https://github.com/CIRCL/PyPDNS',
+        'Tracker': 'https://github.com/CIRCL/PyPDNS/issues',
     },
     description='Python API for PDNS.',
     long_description=long_description,
