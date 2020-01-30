@@ -1,18 +1,22 @@
 language: python
 
 python:
-  - "3.5"
   - "3.6"
   - "3.6-dev"
+  - "3.7"
   - "3.7-dev"
+  - "3.8"
+  - "3.8-dev"
 
 install:
-    - pip install pipenv
-    - pipenv install --dev
+    - pip install poetry
+    - poetry install
 
 script:
-    - pipenv run nosetests --with-coverage --cover-package=pypdns tests/test.py
+    - poetry run nosetests --with-coverage --cover-package=pypdns tests/test.py
+    - poetry run flake8 --ignore=E501,W503,E226,E252 .
+    - poetry run mypy .
 
 after_success:
-    - pipenv run codecov
-    - pipenv run coveralls
+    - poetry run codecov
+    - poetry run coveralls

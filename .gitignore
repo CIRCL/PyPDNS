@@ -5,3 +5,7 @@ pypdns.egg-info/
 virtenv/
 
 pypdns/api_key.py
+
+.coverage
+.mypy_cache/
+*.swp

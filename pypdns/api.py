@@ -4,11 +4,12 @@
 import datetime
 import json
 import requests
+from typing import Optional, Tuple, List, Dict
 
 from pypdns.errors import PDNSError, UnauthorizedError, ForbiddenError, RateLimitError, ServerError
 
 try:
-    import requests_cache
+    import requests_cache  # type: ignore
     HAS_CACHE = True
 except ImportError:
     HAS_CACHE = False
@@ -20,8 +21,9 @@ sort_choice = ['count', 'rdata', 'rrname', 'rrtype', 'time_first', 'time_last']
 
 class PyPDNS(object):
 
-    def __init__(self, url='https://www.circl.lu/pdns/query', basic_auth=None,
-                 auth_token=None, enable_cache=False, cache_expire_after=604800, cache_file='/tmp/pdns.cache'):
+    def __init__(self, url: str='https://www.circl.lu/pdns/query', basic_auth: Optional[Tuple[str, str]]=None,
+                 auth_token: Optional[str]=None, enable_cache: bool=False, cache_expire_after: int=604800,
+                 cache_file: str='/tmp/pdns.cache'):
         self.url = url
         if enable_cache and not HAS_CACHE:
             raise PDNSError('Please install requests_cache if you want to use the caching capabilities.')
@@ -41,7 +43,7 @@ class PyPDNS(object):
             # No authentication defined.
             pass
 
-    def query(self, q, sort_by='time_last'):
+    def query(self, q: str, sort_by: str='time_last') -> List[Dict]:
         logger.info("start query() q=[%s]", q)
         if sort_by not in sort_choice:
             raise PDNSError('You can only sort by ' + ', '.join(sort_choice))
@@ -66,7 +68,7 @@ class PyPDNS(object):
         return to_return
 
     @staticmethod
-    def _handle_http_error(response):
+    def _handle_http_error(response: requests.Response):
         if response.status_code == 401:
             raise UnauthorizedError("Not authenticated: is authentication correct?")
         if response.status_code == 403:

@@ -1,2 +1,2 @@
-from .api import PyPDNS
-from .errors import PDNSError, RateLimitError, UnauthorizedError, ForbiddenError, ServerError
+from .api import PyPDNS  # noqa
+from .errors import PDNSError, RateLimitError, UnauthorizedError, ForbiddenError, ServerError  # noqa
