@@ -1,9 +1,12 @@
 [tool.poetry]
 name = "pypdns"
-version = "1.5"
+version = "1.5.1"
 description = "Python API for PDNS."
 authors = ["Raphaël Vinot <raphael.vinot@circl.lu>"]
 license = "GPL-3.0+"
+
+readme = "README.md"
+
 repository = "https://github.com/CIRCL/PyPDNS"
 documentation = "https://github.com/CIRCL/PyPDNS"
 
