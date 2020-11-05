@@ -23,7 +23,7 @@ class PyPDNS(object):
 
     def __init__(self, url: str='https://www.circl.lu/pdns/query', basic_auth: Optional[Tuple[str, str]]=None,
                  auth_token: Optional[str]=None, enable_cache: bool=False, cache_expire_after: int=604800,
-                 cache_file: str='/tmp/pdns.cache',https_proxy_string: Optional[str]=None):
+                 cache_file: str='/tmp/pdns.cache', https_proxy_string: Optional[str]=None):
         self.url = url
         if enable_cache and not HAS_CACHE:
             raise PDNSError('Please install requests_cache if you want to use the caching capabilities.')
