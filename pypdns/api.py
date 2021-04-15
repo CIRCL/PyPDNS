@@ -47,11 +47,11 @@ class PyPDNS(object):
             proxy = {'https': https_proxy_string}
             self.session.proxies.update(proxy)
 
-    def query(self, q: str, sort_by: str='time_last') -> List[Dict]:
+    def query(self, q: str, sort_by: str = 'time_last', timeout: int = None) -> List[Dict]:
         logger.info("start query() q=[%s]", q)
         if sort_by not in sort_choice:
             raise PDNSError('You can only sort by ' + ', '.join(sort_choice))
-        response = self.session.get('{}/{}' .format(self.url, q))
+        response = self.session.get('{}/{}' .format(self.url, q), timeout=timeout)
         if response.status_code != 200:
             self._handle_http_error(response)
         to_return = []
