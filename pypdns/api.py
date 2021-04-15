@@ -55,16 +55,16 @@ class PyPDNS(object):
         if response.status_code != 200:
             self._handle_http_error(response)
         to_return = []
-        for l in response.text.split('\n'):
-            if len(l) == 0:
+        for line in response.text.split('\n'):
+            if len(line) == 0:
                 continue
             try:
                 if self.enable_cache is True and response.from_cache is True:
                     logger.info("from cache query() q=[%s]", q)
-                obj = json.loads(l)
+                obj = json.loads(line)
             except Exception:
                 logger.exception("except query() q=[%s]", q)
-                raise PDNSError('Unable to decode JSON object: ' + l)
+                raise PDNSError('Unable to decode JSON object: ' + line)
             obj['time_first'] = datetime.datetime.fromtimestamp(obj['time_first'])
             obj['time_last'] = datetime.datetime.fromtimestamp(obj['time_last'])
             to_return.append(obj)
