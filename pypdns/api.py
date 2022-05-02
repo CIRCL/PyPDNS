@@ -14,7 +14,7 @@ try:
 except ImportError:
     HAS_CACHE = False
 import logging
-logger = logging
+logger = logging.getLogger("pypdns")
 
 sort_choice = ['count', 'rdata', 'rrname', 'rrtype', 'time_first', 'time_last']
 
