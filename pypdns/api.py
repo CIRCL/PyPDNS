@@ -3,16 +3,20 @@
 
 import datetime
 import json
+from typing import Optional, Tuple, List, Dict, Union
+
 import requests
-from typing import Optional, Tuple, List, Dict
+from requests import Session, Response
 
 from pypdns.errors import PDNSError, UnauthorizedError, ForbiddenError, RateLimitError, ServerError
 
 try:
-    import requests_cache  # type: ignore
+    import requests_cache
+    from requests_cache import CachedSession, CachedResponse
     HAS_CACHE = True
 except ImportError:
     HAS_CACHE = False
+
 import logging
 logger = logging.getLogger("pypdns")
 
@@ -24,10 +28,10 @@ class PyPDNS(object):
     def __init__(self, url: str='https://www.circl.lu/pdns/query', basic_auth: Optional[Tuple[str, str]]=None,
                  auth_token: Optional[str]=None, enable_cache: bool=False, cache_expire_after: int=604800,
                  cache_file: str='/tmp/pdns.cache', https_proxy_string: Optional[str]=None):
+        self.session: Union[CachedSession, Session]
         self.url = url
         if enable_cache and not HAS_CACHE:
             raise PDNSError('Please install requests_cache if you want to use the caching capabilities.')
-        self.enable_cache = enable_cache
 
         if enable_cache is True:
             requests_cache.install_cache(cache_file, backend='sqlite', expire_after=cache_expire_after)
@@ -51,7 +55,7 @@ class PyPDNS(object):
         logger.info("start query() q=[%s]", q)
         if sort_by not in sort_choice:
             raise PDNSError('You can only sort by ' + ', '.join(sort_choice))
-        response = self.session.get('{}/{}' .format(self.url, q), timeout=timeout)
+        response: Union[Response, CachedResponse] = self.session.get('{}/{}' .format(self.url, q), timeout=timeout)
         if response.status_code != 200:
             self._handle_http_error(response)
         to_return = []
@@ -59,7 +63,7 @@ class PyPDNS(object):
             if len(line) == 0:
                 continue
             try:
-                if self.enable_cache is True and response.from_cache is True:
+                if isinstance(response, CachedResponse) and response.from_cache is True:
                     logger.info("from cache query() q=[%s]", q)
                 obj = json.loads(line)
             except Exception:
