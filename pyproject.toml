@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pypdns"
-version = "1.6.0"
+version = "2.0.0"
 description = "Python API for PDNS."
 authors = ["Raphaël Vinot <raphael.vinot@circl.lu>"]
 license = "GPL-3.0+"
@@ -28,6 +28,7 @@ classifiers=[
 [tool.poetry.dependencies]
 python = "^3.8"
 requests-cache = "^0.9.5"
+dnspython = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.961"
