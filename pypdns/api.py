@@ -244,7 +244,7 @@ class PyPDNS(object):
             proxy = {'https': https_proxy_string}
             self.session.proxies.update(proxy)
 
-    def _query(self, q: str, sort_by: str = 'time_last', timeout: int = None) -> List[Dict[str, Optional[Union[str, int, bool, List[str], Dict[Any, Any]]]]]:
+    def _query(self, q: str, sort_by: str = 'time_last', timeout: Optional[int] = None) -> List[Dict[str, Optional[Union[str, int, bool, List[str], Dict[Any, Any]]]]]:
         logger.debug("start query() q=[%s]", q)
         if sort_by not in sort_choice:
             raise PDNSError(f'You can only sort by {", ".join(sort_choice)}')
@@ -266,10 +266,10 @@ class PyPDNS(object):
         to_return = sorted(to_return, key=lambda k: k[sort_by])
         return to_return
 
-    def rfc_query(self, q: str, /, *, sort_by: str = 'time_last', timeout: int = None) -> List[PDNSRecord]:
+    def rfc_query(self, q: str, /, *, sort_by: str = 'time_last', timeout: Optional[int] = None) -> List[PDNSRecord]:
         return [PDNSRecord(record) for record in self._query(q, sort_by, timeout)]
 
-    def query(self, q: str, sort_by: str = 'time_last', timeout: int = None) -> List[Dict]:
+    def query(self, q: str, sort_by: str = 'time_last', timeout: Optional[int] = None) -> List[Dict]:
         # This method (almost) returns the response from the server but turns the times into python datetime.
         # It was a bad design decision hears ago. Use rfc_query instead for something saner.
         # This method will be deprecated.
