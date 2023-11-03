@@ -21,6 +21,18 @@ Usage
 
 You can use `pdns` as a python script::
 
+    $ pdns -h
+    usage: pdns [-h] --username USERNAME --password PASSWORD --query QUERY [--rrtype RRTYPE]
+
+    Triggers a request againse CIRCL Passive DNS.
+
+    options:
+      -h, --help           show this help message and exit
+      --username USERNAME  The username of you account.
+      --password PASSWORD  The password of you account.
+      --query QUERY        The query, can be an IP. domain, hostname, TLD.
+      --rrtype RRTYPE      Filter the request based on the RR Type.
+
 Or as a library:
 
 .. toctree::

@@ -233,6 +233,7 @@ class PyPDNS(object):
                  useragent: Optional[str]=None,
                  disable_active_query: bool=False):
         '''Connector to Passive DNS
+
         :param url: The URL of the service
         :param basic_auth: HTTP basic auth to cnnect to the service: ("username", "password")
         :param auth_token: HTTP basic auth but the token
@@ -277,6 +278,7 @@ class PyPDNS(object):
                    break_on_errors: bool=False) -> Generator[PDNSRecord, None, Optional[Dict[str, Union[str, int]]]]:
         '''Iterate over all the recording matching your request, useful if there are a lot.
         Note: the order is non-deterministic.
+
         :param q: The query
         :param filter_rrtype: The filter, must be a valid RR Type or the response will be enpty.
         :param break_on_errors: If there is an error, stop iterating and break immediately
@@ -368,6 +370,7 @@ class PyPDNS(object):
                   filter_rrtype: Optional[str]= None,
                   with_errors: bool=False) -> Union[List[PDNSRecord], Tuple[List[PDNSRecord], Dict[str, Union[str, int]]]]:
         '''Triggers a non-paginated query, can be sorted but will raise an error if the response is too big.
+
         :param q: The query
         :param sort_by: The key to use to sort the records
         :param filter_rrtype: The filter, must be a valid RR Type or the response will be enpty.
