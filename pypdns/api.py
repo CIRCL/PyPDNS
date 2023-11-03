@@ -6,7 +6,9 @@ import logging
 
 from datetime import datetime
 from functools import cached_property
-from typing import Optional, Tuple, List, Dict, Union, Any, TypedDict, overload, Literal
+from importlib.metadata import version
+from typing import Optional, Tuple, List, Dict, Union, Any, TypedDict, overload, Literal, Generator
+# from urllib.parse import urljoin, urlparse
 
 import requests
 from requests import Session, Response
@@ -27,6 +29,7 @@ sort_choice = ['count', 'rdata', 'rrname', 'rrtype', 'time_first', 'time_last']
 
 
 class TypedPDNSRecord(TypedDict, total=False):
+    '''A dict representing a Passive DNS record'''
 
     rrname: str
     rrtype: str
@@ -49,14 +52,17 @@ class TypedPDNSRecord(TypedDict, total=False):
 class PDNSRecord:
 
     def __init__(self, record: Dict[str, Optional[Union[str, int, bool, List[str], Dict[Any, Any]]]]):
+        '''A pythonesque Passive DNS record'''
         self._record = record
 
     @property
     def raw(self) -> Dict[str, Optional[Union[str, int, bool, List[str], Dict[Any, Any]]]]:
+        '''The raw record'''
         return self._record
 
     @cached_property
     def record(self) -> TypedPDNSRecord:
+        '''The record as a python dictionary'''
         if not isinstance(self._record['rrname'], str):
             raise PDNSRecordTypeError('rrname', 'str', self._record["rrname"])
 
@@ -218,20 +224,38 @@ class PDNSRecord:
 
 class PyPDNS(object):
 
-    def __init__(self, url: str='https://www.circl.lu/pdns/query', basic_auth: Optional[Tuple[str, str]]=None,
-                 auth_token: Optional[str]=None, enable_cache: bool=False, cache_expire_after: int=604800,
-                 cache_file: str='/tmp/pdns.cache', https_proxy_string: Optional[str]=None,
+    def __init__(self, url: str='https://www.circl.lu/pdns/query',
+                 basic_auth: Optional[Tuple[str, str]]=None,
+                 auth_token: Optional[str]=None,
+                 enable_cache: bool=False, cache_expire_after: int=604800,
+                 cache_file: str='/tmp/pdns.cache',
+                 https_proxy_string: Optional[str]=None,
+                 useragent: Optional[str]=None,
                  disable_active_query: bool=False):
-        self.session: Union[CachedSession, Session]
+        '''Connector to Passive DNS
+        :param url: The URL of the service
+        :param basic_auth: HTTP basic auth to cnnect to the service: ("username", "password")
+        :param auth_token: HTTP basic auth but the token
+        :param enable_cache: Cache responses locally
+        :param cache_file: The file to cache the responses to
+        :param https_proxy_string: The HTTP proxy to connect to the service
+        :param useragent: User Agent to submit to the server
+        :param disable_active_query: THe passive DNS will attempt to resolve the request by default. Set to True if you don't want that.
+        '''
+
         self.url = url
+
         if enable_cache and not HAS_CACHE:
             raise PDNSError('Please install requests_cache if you want to use the caching capabilities.')
 
+        self.session: Union[CachedSession, Session]
         if enable_cache is True:
             requests_cache.install_cache(cache_file, backend='sqlite', expire_after=cache_expire_after)
             self.session = requests_cache.CachedSession()
         else:
             self.session = requests.Session()
+        self.session.headers['user-agent'] = useragent if useragent else f'PyPDNS / {version("pypdns")}'
+
         if basic_auth is not None:
             # basic_auth has do be a tuple ('user_name', 'password')
             self.session.auth = basic_auth
@@ -248,20 +272,62 @@ class PyPDNS(object):
             proxy = {'https': https_proxy_string}
             self.session.proxies.update(proxy)
 
+    def iter_query(self, q: str,
+                   filter_rrtype: Optional[str]=None,
+                   break_on_errors: bool=False) -> Generator[PDNSRecord, None, Optional[Dict[str, Union[str, int]]]]:
+        '''Iterate over all the recording matching your request, useful if there are a lot.
+        Note: the order is non-deterministic.
+        :param q: The query
+        :param filter_rrtype: The filter, must be a valid RR Type or the response will be enpty.
+        :param break_on_errors: If there is an error, stop iterating and break immediately
+        '''
+        cursor = -1
+        query_headers = {'dribble-paginate-count': '50'}
+        if filter_rrtype:
+            query_headers['dribble-filter-rrtype'] = filter_rrtype
+        while True:
+            if cursor > 0:
+                query_headers['dribble-paginate-cursor'] = str(cursor)
+            response: Union[Response, CachedResponse] = self.session.get(f'{self.url}/{q}',
+                                                                         timeout=15,
+                                                                         headers=query_headers)
+            if response.status_code != 200:
+                self._handle_http_error(response)
+            if break_on_errors:
+                if e := self._handle_dribble_errors(response):
+                    return e
+
+            for line in response.text.split('\n'):
+                if len(line) == 0:
+                    continue
+                try:
+                    if isinstance(response, CachedResponse) and response.from_cache is True:
+                        logger.debug("from cache query() q=[%s]", q)
+                    obj = json.loads(line)
+                except Exception:
+                    logger.exception("except query() q=[%s]", q)
+                    raise PDNSError(f'Unable to decode JSON object: {line}')
+                yield PDNSRecord(obj)
+
+            if 'x-dribble-cursor' in response.headers:
+                cursor = int(response.headers['x-dribble-cursor'])
+            else:
+                return None
+
     def _query(self, q: str, sort_by: str = 'time_last',
-               timeout: Optional[int] = None,
+               *,
                filter_rrtype: Optional[str]=None) -> Tuple[List[Dict[str, Optional[Union[str, int, bool, List[str], Dict[Any, Any]]]]],
                                                            Dict[str, Union[str, int]]]:
+        '''Internal method running a non-paginated query, can be sorted.'''
         logger.debug("start query() q=[%s]", q)
         if sort_by not in sort_choice:
             raise PDNSError(f'You can only sort by {", ".join(sort_choice)}')
-        headers = {}
+        query_headers = {}
         if filter_rrtype:
-            # TODO: make sure the type is a valid rrtype
-            headers = self.session.headers
-            headers['dribble-filter-rrtype'] = filter_rrtype
-        response: Union[Response, CachedResponse] = self.session.get(f'{self.url}/{q}', timeout=timeout if timeout else 15,
-                                                                     headers=headers if headers else self.session.headers)
+            query_headers['dribble-filter-rrtype'] = filter_rrtype
+        response: Union[Response, CachedResponse] = self.session.get(f'{self.url}/{q}',
+                                                                     timeout=15,
+                                                                     headers=query_headers)
         if response.status_code != 200:
             self._handle_http_error(response)
         errors = self._handle_dribble_errors(response)
@@ -280,34 +346,48 @@ class PyPDNS(object):
         to_return = sorted(to_return, key=lambda k: k[sort_by])
         return to_return, errors
 
-    def rfc_query(self, q: str, /, *, sort_by: str = 'time_last', timeout: Optional[int] = None) -> List[PDNSRecord]:
-        records, errors = self._query(q, sort_by, timeout)
-        return [PDNSRecord(record) for record in records]
-
     @overload
-    def query(self, q: str, sort_by: str = 'time_last', timeout: Optional[int] = None,
-              filter_rrtype: Optional[str]= None,
-              *, with_errors: Literal[True]) -> Tuple[List[Dict], Dict]:
+    def rfc_query(self, q: str, /,
+                  *,
+                  sort_by: str = 'time_last',
+                  filter_rrtype: Optional[str]= None,
+                  with_errors: Literal[True]) -> Tuple[List[PDNSRecord], Dict[str, Union[str, int]]]:
         pass
 
     @overload
-    def query(self, q: str, sort_by: str = 'time_last', timeout: Optional[int] = None,
-              filter_rrtype: Optional[str]= None,
-              *, with_errors: Literal[False]) -> List[Dict]:
+    def rfc_query(self, q: str, /,
+                  *,
+                  sort_by: str = 'time_last',
+                  filter_rrtype: Optional[str]= None,
+                  with_errors: Literal[False]) -> List[PDNSRecord]:
         pass
 
-    def query(self, q: str, sort_by: str = 'time_last', timeout: Optional[int] = None,
-              filter_rrtype: Optional[str]= None,
-              *, with_errors: bool=False) -> Union[Tuple[List[Dict], Dict], List[Dict]]:
-        # This method (almost) returns the response from the server but turns the times into python datetime.
-        # It was a bad design decision hears ago. Use rfc_query instead for something saner.
-        # This method will be deprecated.
-        records, errors = self._query(q, sort_by, timeout, filter_rrtype)
+    def rfc_query(self, q: str, /,
+                  *,
+                  sort_by: str = 'time_last',
+                  filter_rrtype: Optional[str]= None,
+                  with_errors: bool=False) -> Union[List[PDNSRecord], Tuple[List[PDNSRecord], Dict[str, Union[str, int]]]]:
+        '''Triggers a non-paginated query, can be sorted but will raise an error if the response is too big.
+        :param q: The query
+        :param sort_by: The key to use to sort the records
+        :param filter_rrtype: The filter, must be a valid RR Type or the response will be enpty.
+        :param with_errors: Returns the errors (if any)
+        '''
+        records, errors = self._query(q, sort_by, filter_rrtype=filter_rrtype)
+        to_return_records = [PDNSRecord(record) for record in records]
+        if not with_errors:
+            return to_return_records
+        return to_return_records, errors
+
+    def query(self, q: str, sort_by: str = 'time_last', timeout: Optional[int] = None) -> List[Dict]:
+        '''This method (almost) returns the response from the server but turns the times into python datetime.
+        It was a bad design decision hears ago. Use rfc_query instead for something saner.
+        This method is deprecated.
+        '''
+        records, errors = self._query(q, sort_by)
         for record in records:
             record['time_first'] = datetime.fromtimestamp(record['time_first'])  # type: ignore
             record['time_last'] = datetime.fromtimestamp(record['time_last'])  # type: ignore
-        if with_errors:
-            return records, errors
         return records
 
     def _handle_dribble_errors(self, response: requests.Response) -> Dict[str, Union[str, int]]:

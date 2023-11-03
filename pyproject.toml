@@ -24,6 +24,9 @@ classifiers=[
     'Topic :: Internet'
 ]
 
+[tool.poetry.scripts]
+pdns = 'pypdns:main'
+
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/CIRCL/PyPDNS/issues"
 
@@ -31,11 +34,18 @@ classifiers=[
 python = "^3.8.1"
 requests-cache = "^1.1.0"
 dnspython = "^2.4.2"
+Sphinx = [
+    {version = "<7.2", python = "<3.9", optional = true},
+    {version = "^7.2", python = ">=3.9", optional = true}
+]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
 types-requests = "^2.31.0.10"
 pytest = "^7.4.3"
+
+[tool.poetry.extras]
+docs = ["Sphinx"]
 
 [build-system]
 requires = ["poetry_core"]
