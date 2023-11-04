@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import json
@@ -8,7 +8,6 @@ from datetime import datetime
 from functools import cached_property
 from importlib.metadata import version
 from typing import Optional, Tuple, List, Dict, Union, Any, TypedDict, overload, Literal, Generator
-# from urllib.parse import urljoin, urlparse
 
 import requests
 from requests import Session, Response
@@ -50,9 +49,12 @@ class TypedPDNSRecord(TypedDict, total=False):
 
 
 class PDNSRecord:
+    '''A pythonesque Passive DNS record,
+       see RFC for details: https://www.ietf.org/id/draft-dulaunoy-dnsop-passive-dns-cof-10.html
+    '''
+    __slots__ = ('_record', )
 
     def __init__(self, record: Dict[str, Optional[Union[str, int, bool, List[str], Dict[Any, Any]]]]):
-        '''A pythonesque Passive DNS record'''
         self._record = record
 
     @property
@@ -148,65 +150,98 @@ class PDNSRecord:
 
     @property
     def rrname(self) -> str:
+        '''The name of the queried resource'''
         return self.record['rrname']
 
     @property
     def rrtype(self) -> str:
+        '''The resource record type as seen by the passive DNS'''
         return self.record['rrtype']
 
     @property
     def rdata(self) -> Union[str, List[str]]:
+        '''The resource records of the queried resource'''
         return self.record['rdata']
 
     @property
     def time_first(self) -> int:
+        '''The first time that the record / unique tuple (rrname, rrtype, rdata)
+           has been seen by the passive DNS
+        '''
         return self.record['time_first']
 
     @property
     def time_last(self) -> int:
+        '''The last time that the record / unique tuple (rrname, rrtype, rdata)
+           has been seen by the passive DNS
+        '''
         return self.record['time_last']
 
     def __repr__(self) -> str:
         return f'PDNSRecord(rrname="{self.rrname}", rrtype="{self.rrtype}", rdata="{self.rdata}", time_first={self.time_first}, time_last={self.time_last})'
 
-    @property
+    @cached_property
     def time_first_datetime(self) -> datetime:
+        '''The first time that the record / unique tuple (rrname, rrtype, rdata)
+           has been seen by the passive DNS, as a python datetime.
+        '''
         return datetime.fromtimestamp(self.time_first)
 
-    @property
+    @cached_property
     def time_last_datetime(self) -> datetime:
+        '''The last time that the record / unique tuple (rrname, rrtype, rdata)
+           has been seen by the passive DNS, as a python datetime.
+        '''
         return datetime.fromtimestamp(self.time_last)
 
     @property
     def count(self) -> Optional[int]:
+        '''How many authoritative DNS answers were received at the Passive DNS Server's
+           collectors with exactly the given set of values as answers
+        '''
         return self.record.get('count')
 
     @property
     def bailiwick(self) -> Optional[str]:
+        '''The best estimate of the apex of the zone where this data is authoritative'''
         return self.record.get('bailiwick')
 
     @property
     def sensor_id(self) -> Optional[str]:
+        '''The sensor information where the record was seen.'''
         return self.record.get('sensor_id')
 
     @property
     def zone_time_first(self) -> Optional[int]:
+        '''The first time that the unique tuple (rrname, rrtype, rdata) record
+           has been seen via master file import
+        '''
         return self.record.get('zone_time_first')
 
     @property
     def zone_time_last(self) -> Optional[int]:
+        '''The last time that the unique tuple (rrname, rrtype, rdata) record
+           has been seen via master file import
+        '''
         return self.record.get('zone_time_last')
 
     @property
     def origin(self) -> Optional[str]:
+        '''The resource origin of the Passive DNS response'''
         return self.record.get('origin')
 
     @property
     def time_first_ms(self) -> Optional[int]:
+        '''The first time that the record / unique tuple (rrname, rrtype, rdata)
+           has been seen by the passive DNS, in miliseconds since 1st of January 1970 (UTC).
+        '''
         return self.record.get('time_first_ms')
 
     @property
     def time_last_ms(self) -> Optional[int]:
+        '''The first time that the record / unique tuple (rrname, rrtype, rdata)
+           has been seen by the passive DNS, in miliseconds since 1st of January 1970 (UTC).
+        '''
         return self.record.get('time_last_ms')
 
     @property
@@ -280,7 +315,7 @@ class PyPDNS(object):
         Note: the order is non-deterministic.
 
         :param q: The query
-        :param filter_rrtype: The filter, must be a valid RR Type or the response will be enpty.
+        :param filter_rrtype: The filter, must be a valid RR Type or the response will be empty.
         :param break_on_errors: If there is an error, stop iterating and break immediately
         '''
         cursor = -1
