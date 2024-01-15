@@ -4,8 +4,10 @@ import json
 from .api import PyPDNS, PDNSRecord, TypedPDNSRecord  # noqa
 from .errors import PDNSError, RateLimitError, UnauthorizedError, ForbiddenError, ServerError  # noqa
 
+__all__ = ['PyPDNS', 'PDNSRecord', 'TypedPDNSRecord', 'PDNSError', 'RateLimitError', 'UnauthorizedError', 'ForbiddenError', 'ServerError']
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(description='Triggers a request againse CIRCL Passive DNS.')
     parser.add_argument('--username', required=True, help='The username of you account.')
     parser.add_argument('--password', required=True, help='The password of you account.')

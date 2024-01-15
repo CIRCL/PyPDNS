@@ -40,9 +40,9 @@ Sphinx = [
 ]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.7.0"
-types-requests = "^2.31.0.10"
-pytest = "^7.4.3"
+mypy = "^1.8.0"
+types-requests = "^2.31.0.20240106"
+pytest = "^7.4.4"
 
 [tool.poetry.extras]
 docs = ["Sphinx"]

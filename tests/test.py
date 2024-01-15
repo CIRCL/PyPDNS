@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import unittest
 from pypdns import PyPDNS, UnauthorizedError
@@ -7,7 +6,7 @@ from pypdns import PyPDNS, UnauthorizedError
 
 class TestBasic(unittest.TestCase):
 
-    def test_not_auth(self):
+    def test_not_auth(self) -> None:
         x = PyPDNS(basic_auth=('username', 'yourpassword'))
         with self.assertRaises(UnauthorizedError):
             x.query('www.microsoft.com')
