@@ -33,7 +33,7 @@ pdns = 'pypdns:main'
 [tool.poetry.dependencies]
 python = "^3.8"
 requests-cache = "^1.1.1"
-dnspython = "^2.4.2"
+dnspython = "^2.5.0"
 Sphinx = [
     {version = "<7.2", python = "<3.9", optional = true},
     {version = "^7.2", python = ">=3.9", optional = true}
@@ -41,7 +41,7 @@ Sphinx = [
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
-types-requests = "^2.31.0.20240106"
+types-requests = "^2.31.0.20240125"
 pytest = "^7.4.4"
 
 [tool.poetry.extras]
