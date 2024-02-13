@@ -6,7 +6,6 @@ import json
 import logging
 
 from datetime import datetime
-from functools import cached_property
 from importlib.metadata import version
 from typing import Any, TypedDict, overload, Literal, Generator
 
@@ -54,100 +53,103 @@ class PDNSRecord:
     '''A pythonesque Passive DNS record,
        see RFC for details: https://www.ietf.org/id/draft-dulaunoy-dnsop-passive-dns-cof-10.html
     '''
-    __slots__ = ('_record', )
+    __slots__ = ('_raw_record', '_typed_record')
 
     def __init__(self, record: dict[str, str | int | bool | list[str] | dict[Any, Any] | None]):
-        self._record = record
+        self._raw_record = record
+        self._typed_record = self.__init_typed_record()
 
     @property
     def raw(self) -> dict[str, str | int | bool | list[str] | dict[Any, Any] | None]:
         '''The raw record'''
-        return self._record
+        return self._raw_record
 
-    @cached_property
+    @property
     def record(self) -> TypedPDNSRecord:
+        return self._typed_record
+
+    def __init_typed_record(self) -> TypedPDNSRecord:
         '''The record as a python dictionary'''
-        if not isinstance(self._record['rrname'], str):
-            raise PDNSRecordTypeError('rrname', 'str', self._record["rrname"])
+        if not isinstance(self._raw_record['rrname'], str):
+            raise PDNSRecordTypeError('rrname', 'str', self._raw_record["rrname"])
 
-        if not isinstance(self._record['rrtype'], (str, int)):
-            raise PDNSRecordTypeError('rrtype', 'str, int', self._record["rrtype"])
+        if not isinstance(self._raw_record['rrtype'], (str, int)):
+            raise PDNSRecordTypeError('rrtype', 'str, int', self._raw_record["rrtype"])
 
-        if isinstance(self._record['rrtype'], int):
+        if isinstance(self._raw_record['rrtype'], int):
             # Accordingly to the specs, the type can be a string OR an int. we normalize to str
-            rrtype: str = RdataType(self._record['rrtype']).name
+            rrtype: str = RdataType(self._raw_record['rrtype']).name
         else:
-            rrtype = RdataType[self._record['rrtype']].name
+            rrtype = RdataType[self._raw_record['rrtype']].name
 
-        if not isinstance(self._record['rdata'], (str, list)):
-            raise PDNSRecordTypeError('rdata', 'str, list of string', self._record["rdata"])
+        if not isinstance(self._raw_record['rdata'], (str, list)):
+            raise PDNSRecordTypeError('rdata', 'str, list of string', self._raw_record["rdata"])
 
-        if not isinstance(self._record['time_first'], int):
-            raise PDNSRecordTypeError('time_first', 'int', self._record["time_first"])
+        if not isinstance(self._raw_record['time_first'], int):
+            raise PDNSRecordTypeError('time_first', 'int', self._raw_record["time_first"])
 
-        if not isinstance(self._record['time_last'], int):
-            raise PDNSRecordTypeError('time_last', 'int', self._record["time_last"])
+        if not isinstance(self._raw_record['time_last'], int):
+            raise PDNSRecordTypeError('time_last', 'int', self._raw_record["time_last"])
 
-        to_return: TypedPDNSRecord = {'rrname': self._record['rrname'],
+        to_return: TypedPDNSRecord = {'rrname': self._raw_record['rrname'],
                                       'rrtype': rrtype,
-                                      'rdata': self._record['rdata'],
-                                      'time_first': self._record["time_first"],
-                                      'time_last': self._record["time_last"]}
-        if 'count' in self._record:
-            if not isinstance(self._record['count'], int):
-                raise PDNSRecordTypeError('count', 'int', self._record["count"])
-            to_return['count'] = self._record["count"]
+                                      'rdata': self._raw_record['rdata'],
+                                      'time_first': self._raw_record["time_first"],
+                                      'time_last': self._raw_record["time_last"]}
+        if 'count' in self._raw_record:
+            if not isinstance(self._raw_record['count'], int):
+                raise PDNSRecordTypeError('count', 'int', self._raw_record["count"])
+            to_return['count'] = self._raw_record["count"]
 
-        if 'bailiwick' in self._record:
-            if not isinstance(self._record['bailiwick'], str):
-                raise PDNSRecordTypeError('bailiwick', 'str', self._record["bailiwick"])
-            to_return['bailiwick'] = self._record['bailiwick']
+        if 'bailiwick' in self._raw_record:
+            if not isinstance(self._raw_record['bailiwick'], str):
+                raise PDNSRecordTypeError('bailiwick', 'str', self._raw_record["bailiwick"])
+            to_return['bailiwick'] = self._raw_record['bailiwick']
 
-        if 'sensor_id' in self._record:
-            if not isinstance(self._record['sensor_id'], str):
-                raise PDNSRecordTypeError('sensor_id', 'str', self._record["sensor_id"])
-            to_return['sensor_id'] = self._record['sensor_id']
+        if 'sensor_id' in self._raw_record:
+            if not isinstance(self._raw_record['sensor_id'], str):
+                raise PDNSRecordTypeError('sensor_id', 'str', self._raw_record["sensor_id"])
+            to_return['sensor_id'] = self._raw_record['sensor_id']
 
-        if 'zone_time_first' in self._record:
-            if not isinstance(self._record['zone_time_first'], int):
-                raise PDNSRecordTypeError('zone_time_first', 'int', self._record["zone_time_first"])
-            to_return['zone_time_first'] = self._record['zone_time_first']
+        if 'zone_time_first' in self._raw_record:
+            if not isinstance(self._raw_record['zone_time_first'], int):
+                raise PDNSRecordTypeError('zone_time_first', 'int', self._raw_record["zone_time_first"])
+            to_return['zone_time_first'] = self._raw_record['zone_time_first']
 
-        if 'zone_time_last' in self._record:
-            if not isinstance(self._record['zone_time_last'], int):
-                raise PDNSRecordTypeError('zone_time_last', 'int', self._record["zone_time_last"])
-            to_return['zone_time_first'] = self._record["zone_time_last"]
+        if 'zone_time_last' in self._raw_record:
+            if not isinstance(self._raw_record['zone_time_last'], int):
+                raise PDNSRecordTypeError('zone_time_last', 'int', self._raw_record["zone_time_last"])
+            to_return['zone_time_first'] = self._raw_record["zone_time_last"]
 
-        if 'origin' in self._record:
-            if not isinstance(self._record['origin'], str):
-                raise PDNSRecordTypeError('origin', 'str', self._record["origin"])
-            to_return['origin'] = self._record["origin"]
+        if 'origin' in self._raw_record:
+            if not isinstance(self._raw_record['origin'], str):
+                raise PDNSRecordTypeError('origin', 'str', self._raw_record["origin"])
+            to_return['origin'] = self._raw_record["origin"]
 
-        if 'time_first_ms' in self._record:
-            if not isinstance(self._record['time_first_ms'], int):
-                raise PDNSRecordTypeError('time_first_ms', 'int', self._record["time_first_ms"])
-            to_return['time_first_ms'] = self._record["time_first_ms"]
+        if 'time_first_ms' in self._raw_record:
+            if not isinstance(self._raw_record['time_first_ms'], int):
+                raise PDNSRecordTypeError('time_first_ms', 'int', self._raw_record["time_first_ms"])
+            to_return['time_first_ms'] = self._raw_record["time_first_ms"]
 
-        if 'time_last_ms' in self._record:
-            if not isinstance(self._record['time_last_ms'], int):
-                raise PDNSRecordTypeError('time_last_ms', 'int', self._record["time_last_ms"])
-            to_return['time_last_ms'] = self._record['time_last_ms']
+        if 'time_last_ms' in self._raw_record:
+            if not isinstance(self._raw_record['time_last_ms'], int):
+                raise PDNSRecordTypeError('time_last_ms', 'int', self._raw_record["time_last_ms"])
+            to_return['time_last_ms'] = self._raw_record['time_last_ms']
 
-        if 'time_first_rfc3339' in self._record:
-            if not isinstance(self._record['time_first_rfc3339'], str):
-                raise PDNSRecordTypeError('time_first_rfc3339', 'str', self._record["time_first_rfc3339"])
-            to_return['time_first_rfc3339'] = self._record['time_first_rfc3339']
+        if 'time_first_rfc3339' in self._raw_record:
+            if not isinstance(self._raw_record['time_first_rfc3339'], str):
+                raise PDNSRecordTypeError('time_first_rfc3339', 'str', self._raw_record["time_first_rfc3339"])
+            to_return['time_first_rfc3339'] = self._raw_record['time_first_rfc3339']
 
-        if 'time_last_rfc3339' in self._record:
-            if not isinstance(self._record['time_last_rfc3339'], str):
-                raise PDNSRecordTypeError('time_last_rfc3339', 'str', self._record["time_last_rfc3339"])
-            to_return['time_last_rfc3339'] = self._record['time_last_rfc3339']
+        if 'time_last_rfc3339' in self._raw_record:
+            if not isinstance(self._raw_record['time_last_rfc3339'], str):
+                raise PDNSRecordTypeError('time_last_rfc3339', 'str', self._raw_record["time_last_rfc3339"])
+            to_return['time_last_rfc3339'] = self._raw_record['time_last_rfc3339']
 
-        if 'meta' in self._record:
-            if not isinstance(self._record['meta'], dict):
-                raise PDNSRecordTypeError('meta', 'dict', self._record["meta"])
-            to_return['meta'] = self._record['meta']
-
+        if 'meta' in self._raw_record:
+            if not isinstance(self._raw_record['meta'], dict):
+                raise PDNSRecordTypeError('meta', 'dict', self._raw_record["meta"])
+            to_return['meta'] = self._raw_record['meta']
         return to_return
 
     @property
@@ -182,14 +184,14 @@ class PDNSRecord:
     def __repr__(self) -> str:
         return f'PDNSRecord(rrname="{self.rrname}", rrtype="{self.rrtype}", rdata="{self.rdata}", time_first={self.time_first}, time_last={self.time_last})'
 
-    @cached_property
+    @property
     def time_first_datetime(self) -> datetime:
         '''The first time that the record / unique tuple (rrname, rrtype, rdata)
            has been seen by the passive DNS, as a python datetime.
         '''
         return datetime.fromtimestamp(self.time_first)
 
-    @cached_property
+    @property
     def time_last_datetime(self) -> datetime:
         '''The last time that the record / unique tuple (rrname, rrtype, rdata)
            has been seen by the passive DNS, as a python datetime.
