@@ -11,8 +11,8 @@ from pypdns import PyPDNS, UnauthorizedError
 
 class TestBasic(unittest.TestCase):
 
-    login = os.environ.get('LOGIN')
-    password = os.environ.get('PASSWORD')
+    login = os.environ.get('LOGIN', '')
+    password = os.environ.get('PASSWORD', '')
 
     def test_not_auth(self) -> None:
         x = PyPDNS(basic_auth=('username', 'yourpassword'))
