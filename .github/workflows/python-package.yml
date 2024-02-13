@@ -31,8 +31,8 @@ jobs:
         poetry install -vvv
 
     - name: Test with pytest
+      env:
+        LOGIN: ${{ secrets.PDNS_LOGIN }}
+        PASSWORD: ${{ secrets.PDNS_PASSWORD }}
       run: |
-        env:
-          LOGIN: ${{ secrets.PDNS_LOGIN }}
-          PASSWORD: ${{ secrets.PDNS_PASSWORD }}
         poetry run pytest tests/test.py
