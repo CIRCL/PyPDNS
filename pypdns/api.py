@@ -423,7 +423,7 @@ class PyPDNS:
 
     def query(self, q: str, sort_by: str = 'time_last', timeout: int | None = None) -> list[dict[str, Any]]:
         '''This method (almost) returns the response from the server but turns the times into python datetime.
-        It was a bad design decision hears ago. Use rfc_query instead for something saner.
+        It was a bad design decision years ago. Use rfc_query instead for something saner.
         This method is deprecated.
         '''
         records, errors = self._query(q, sort_by)
