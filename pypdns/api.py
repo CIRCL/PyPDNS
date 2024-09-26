@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from datetime import datetime
+from datetime import datetime, timezone
 from importlib.metadata import version
 from typing import Any, TypedDict, overload, Literal, Generator
 
@@ -189,14 +189,14 @@ class PDNSRecord:
         '''The first time that the record / unique tuple (rrname, rrtype, rdata)
            has been seen by the passive DNS, as a python datetime.
         '''
-        return datetime.fromtimestamp(self.time_first)
+        return datetime.fromtimestamp(self.time_first, timezone.utc)
 
     @property
     def time_last_datetime(self) -> datetime:
         '''The last time that the record / unique tuple (rrname, rrtype, rdata)
            has been seen by the passive DNS, as a python datetime.
         '''
-        return datetime.fromtimestamp(self.time_last)
+        return datetime.fromtimestamp(self.time_last, timezone.utc)
 
     @property
     def count(self) -> int | None:
@@ -428,8 +428,8 @@ class PyPDNS:
         '''
         records, errors = self._query(q, sort_by)
         for record in records:
-            record['time_first'] = datetime.fromtimestamp(record['time_first'])  # type: ignore
-            record['time_last'] = datetime.fromtimestamp(record['time_last'])  # type: ignore
+            record['time_first'] = datetime.fromtimestamp(record['time_first'], timezone.utc)  # type: ignore
+            record['time_last'] = datetime.fromtimestamp(record['time_last'], timezone.utc)  # type: ignore
         return records
 
     def _handle_dribble_errors(self, response: requests.Response) -> dict[str, str | int]:
