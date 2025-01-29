@@ -18,6 +18,7 @@ dependencies = [
 
 [project.urls]
 repository = "https://github.com/CIRCL/PyPDNS"
+documentation = "https://pypdns.readthedocs.io"
 
 [tool.poetry]
 classifiers = [
