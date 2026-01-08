@@ -24,7 +24,7 @@ class TestBasic(unittest.TestCase):
         for i in x.iter_query('circl.lu', filter_rrtype='A'):
             self.assertEqual(i.rrname, '185.194.93.14')
         for i in x.iter_query('circl.lu', filter_rrtype='AAAA'):
-            self.assertEqual(i.rrname, '2a00:5980:93::14')
+            self.assertEqual(i.rrname, '2a00:5980:93::67')
         ns_records = [i for i in x.iter_query('circl.lu', filter_rrtype='NS')]
         self.assertEqual(len(ns_records), 8, ns_records)
         sorted_query = x.query('circl.lu', sort_by='rrname')
