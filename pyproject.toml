@@ -1,6 +1,6 @@
 [project]
 name = "pypdns"
-version = "2.3.0"
+version = "2.3.1"
 description = "Python API for PDNS."
 authors = [
     {name="Raphaël Vinot", email="raphael.vinot@circl.lu"}
@@ -34,12 +34,12 @@ classifiers = [
 pdns = 'pypdns:main'
 
 [project.optional-dependencies]
-docs = [ "sphinx (>=9.0.4) ; python_version >= \"3.11\"" ]
+docs = [ "sphinx (>=9.1.0) ; python_version >= \"3.12\"" ]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.19.0"
-types-requests = "^2.32.4.20250913"
-pytest = "^9.0.1"
+mypy = "^1.19.1"
+types-requests = "^2.32.4.20260107"
+pytest = "^9.0.2"
 
 [build-system]
 requires = ["poetry-core>=2.0"]
