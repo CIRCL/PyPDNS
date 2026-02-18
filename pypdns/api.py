@@ -80,7 +80,7 @@ class PDNSRecord:
             # Accordingly to the specs, the type can be a string OR an int. we normalize to str
             rrtype: str = RdataType(self._raw_record['rrtype']).name
         else:
-            rrtype = RdataType[self._raw_record['rrtype']].name
+            rrtype = RdataType[self._raw_record['rrtype'].upper()].name
 
         if not isinstance(self._raw_record['rdata'], (str, list)):
             raise PDNSRecordTypeError('rdata', 'str, list of string', self._raw_record["rdata"])
@@ -266,6 +266,7 @@ class PyPDNS:
     def __init__(self, url: str='https://www.circl.lu/pdns/query',
                  basic_auth: tuple[str, str] | None=None,
                  auth_token: str | None=None,
+                 auth_header: tuple[str, str] | None=None,
                  enable_cache: bool=False, cache_expire_after: int=604800,
                  cache_file: str='/tmp/pdns.cache',
                  https_proxy_string: str | None=None,
@@ -277,6 +278,7 @@ class PyPDNS:
         :param url: The URL of the service
         :param basic_auth: HTTP basic auth to cnnect to the service: ("username", "password")
         :param auth_token: HTTP basic auth but the token
+        :param auth_header: HTTP header to use for authentication: ("X-API-AUTH", "1234")
         :param enable_cache: Cache responses locally
         :param cache_file: The file to cache the responses to
         :param https_proxy_string: The HTTP proxy to connect to the service (deprecated, use proxies instead)
@@ -303,6 +305,8 @@ class PyPDNS:
             self.session.auth = basic_auth
         elif auth_token is not None:
             self.session.headers.update({'Authorization': auth_token})
+        elif auth_header is not None:
+            self.session.headers.update({auth_header[0]: auth_header[1]})
         else:
             # No authentication defined.
             pass
