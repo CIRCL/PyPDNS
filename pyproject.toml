@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 dynamic = [ "classifiers" ]
 
 dependencies = [
-    "requests-cache (>=1.3.0)",
+    "requests-cache (>=1.3.2)",
     "dnspython (>=2.8.0)"
 ]
 
@@ -37,9 +37,9 @@ pdns = 'pypdns:main'
 docs = [ "sphinx (>=9.1.0) ; python_version >= \"3.12\"" ]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.19.1"
-types-requests = "^2.32.4.20260107"
-pytest = "^9.0.2"
+mypy = "^2.1.0"
+types-requests = "^2.33.0.20260518"
+pytest = "^9.0.3"
 
 [build-system]
 requires = ["poetry-core>=2.0"]
