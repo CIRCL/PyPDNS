@@ -7,7 +7,8 @@ import logging
 
 from datetime import datetime, timezone
 from importlib.metadata import version
-from typing import Any, TypedDict, overload, Literal, Generator
+from typing import Any, TypedDict, overload, Literal
+from collections.abc import Generator
 
 import requests
 from requests import Session, Response
@@ -351,7 +352,7 @@ class PyPDNS:
                *,
                filter_rrtype: str | None=None,
                timeout: int=default_timeout) -> tuple[list[dict[str, str | int | bool | list[str] | dict[Any, Any] | None]],
-                                                        dict[str, str | int]]:
+                                                      dict[str, str | int]]:
         '''Internal method running a non-paginated query, can be sorted.'''
         logger.debug("start query() q=[%s]", q)
         if sort_by not in sort_choice:
@@ -390,7 +391,7 @@ class PyPDNS:
                   sort_by: str = 'time_last',
                   filter_rrtype: str | None= None,
                   timeout: int=default_timeout,
-                  with_errors: Literal[True]) -> tuple[list[PDNSRecord], dict[str, str | int]]:
+                  with_errors: Literal[True]=True) -> tuple[list[PDNSRecord], dict[str, str | int]]:
         pass
 
     @overload
@@ -399,7 +400,7 @@ class PyPDNS:
                   sort_by: str = 'time_last',
                   filter_rrtype: str | None= None,
                   timeout: int=default_timeout,
-                  with_errors: Literal[False]) -> list[PDNSRecord]:
+                  with_errors: Literal[False]=False) -> list[PDNSRecord]:
         pass
 
     def rfc_query(self, q: str, /,
