@@ -11,12 +11,12 @@ from typing import Any, TypedDict, overload, Literal, Generator
 
 import requests
 from requests import Session, Response
-from dns.rdatatype import RdataType
+from dns.exception import DNSException
+from dns.rdatatype import RdataType, to_text as rrtype_to_text
 
 from pypdns.errors import PDNSError, UnauthorizedError, ForbiddenError, RateLimitError, ServerError, PDNSRecordTypeError
 
 try:
-    import requests_cache
     from requests_cache import CachedSession
     from requests_cache.models import CachedResponse  # type: ignore[attr-defined]
     HAS_CACHE = True
@@ -26,6 +26,23 @@ except ImportError:
 logger = logging.getLogger("pypdns")
 
 sort_choice = ['count', 'rdata', 'rrname', 'rrtype', 'time_first', 'time_last']
+
+default_timeout = 15
+
+# Optional fields of a COF record, and the python type each one must have.
+_optional_fields: dict[str, type] = {
+    'count': int,
+    'bailiwick': str,
+    'sensor_id': str,
+    'zone_time_first': int,
+    'zone_time_last': int,
+    'origin': str,
+    'time_first_ms': int,
+    'time_last_ms': int,
+    'time_first_rfc3339': str,
+    'time_last_rfc3339': str,
+    'meta': dict,
+}
 
 
 class TypedPDNSRecord(TypedDict, total=False):
@@ -70,86 +87,44 @@ class PDNSRecord:
 
     def __init_typed_record(self) -> TypedPDNSRecord:
         '''The record as a python dictionary'''
-        if not isinstance(self._raw_record['rrname'], str):
-            raise PDNSRecordTypeError('rrname', 'str', self._raw_record["rrname"])
+        raw = self._raw_record
 
-        if not isinstance(self._raw_record['rrtype'], (str, int)):
-            raise PDNSRecordTypeError('rrtype', 'str, int', self._raw_record["rrtype"])
+        if not isinstance(raw['rrname'], str):
+            raise PDNSRecordTypeError('rrname', 'str', raw['rrname'])
 
-        if isinstance(self._raw_record['rrtype'], int):
-            # Accordingly to the specs, the type can be a string OR an int. we normalize to str
-            rrtype: str = RdataType(self._raw_record['rrtype']).name
-        else:
-            rrtype = RdataType[self._raw_record['rrtype'].upper()].name
+        rrtype_raw = raw['rrtype']
+        if not isinstance(rrtype_raw, (str, int)):
+            raise PDNSRecordTypeError('rrtype', 'str, int', rrtype_raw)
 
-        if not isinstance(self._raw_record['rdata'], (str, list)):
-            raise PDNSRecordTypeError('rdata', 'str, list of string', self._raw_record["rdata"])
+        try:
+            # Accordingly to the specs, the type can be a string OR an int. we normalize to str.
+            # make()/to_text() also cover the RFC 3597 "TYPE65535" spelling.
+            rrtype = rrtype_to_text(RdataType.make(rrtype_raw))
+        except (DNSException, ValueError):
+            raise PDNSRecordTypeError('rrtype', 'valid RR type', rrtype_raw)
 
-        if not isinstance(self._raw_record['time_first'], int):
-            raise PDNSRecordTypeError('time_first', 'int', self._raw_record["time_first"])
+        if not isinstance(raw['rdata'], (str, list)):
+            raise PDNSRecordTypeError('rdata', 'str, list of string', raw['rdata'])
 
-        if not isinstance(self._raw_record['time_last'], int):
-            raise PDNSRecordTypeError('time_last', 'int', self._raw_record["time_last"])
+        if not isinstance(raw['time_first'], int):
+            raise PDNSRecordTypeError('time_first', 'int', raw['time_first'])
 
-        to_return: TypedPDNSRecord = {'rrname': self._raw_record['rrname'],
+        if not isinstance(raw['time_last'], int):
+            raise PDNSRecordTypeError('time_last', 'int', raw['time_last'])
+
+        to_return: TypedPDNSRecord = {'rrname': raw['rrname'],
                                       'rrtype': rrtype,
-                                      'rdata': self._raw_record['rdata'],
-                                      'time_first': self._raw_record["time_first"],
-                                      'time_last': self._raw_record["time_last"]}
-        if 'count' in self._raw_record:
-            if not isinstance(self._raw_record['count'], int):
-                raise PDNSRecordTypeError('count', 'int', self._raw_record["count"])
-            to_return['count'] = self._raw_record["count"]
+                                      'rdata': raw['rdata'],
+                                      'time_first': raw['time_first'],
+                                      'time_last': raw['time_last']}
 
-        if 'bailiwick' in self._raw_record:
-            if not isinstance(self._raw_record['bailiwick'], str):
-                raise PDNSRecordTypeError('bailiwick', 'str', self._raw_record["bailiwick"])
-            to_return['bailiwick'] = self._raw_record['bailiwick']
-
-        if 'sensor_id' in self._raw_record:
-            if not isinstance(self._raw_record['sensor_id'], str):
-                raise PDNSRecordTypeError('sensor_id', 'str', self._raw_record["sensor_id"])
-            to_return['sensor_id'] = self._raw_record['sensor_id']
-
-        if 'zone_time_first' in self._raw_record:
-            if not isinstance(self._raw_record['zone_time_first'], int):
-                raise PDNSRecordTypeError('zone_time_first', 'int', self._raw_record["zone_time_first"])
-            to_return['zone_time_first'] = self._raw_record['zone_time_first']
-
-        if 'zone_time_last' in self._raw_record:
-            if not isinstance(self._raw_record['zone_time_last'], int):
-                raise PDNSRecordTypeError('zone_time_last', 'int', self._raw_record["zone_time_last"])
-            to_return['zone_time_first'] = self._raw_record["zone_time_last"]
-
-        if 'origin' in self._raw_record:
-            if not isinstance(self._raw_record['origin'], str):
-                raise PDNSRecordTypeError('origin', 'str', self._raw_record["origin"])
-            to_return['origin'] = self._raw_record["origin"]
-
-        if 'time_first_ms' in self._raw_record:
-            if not isinstance(self._raw_record['time_first_ms'], int):
-                raise PDNSRecordTypeError('time_first_ms', 'int', self._raw_record["time_first_ms"])
-            to_return['time_first_ms'] = self._raw_record["time_first_ms"]
-
-        if 'time_last_ms' in self._raw_record:
-            if not isinstance(self._raw_record['time_last_ms'], int):
-                raise PDNSRecordTypeError('time_last_ms', 'int', self._raw_record["time_last_ms"])
-            to_return['time_last_ms'] = self._raw_record['time_last_ms']
-
-        if 'time_first_rfc3339' in self._raw_record:
-            if not isinstance(self._raw_record['time_first_rfc3339'], str):
-                raise PDNSRecordTypeError('time_first_rfc3339', 'str', self._raw_record["time_first_rfc3339"])
-            to_return['time_first_rfc3339'] = self._raw_record['time_first_rfc3339']
-
-        if 'time_last_rfc3339' in self._raw_record:
-            if not isinstance(self._raw_record['time_last_rfc3339'], str):
-                raise PDNSRecordTypeError('time_last_rfc3339', 'str', self._raw_record["time_last_rfc3339"])
-            to_return['time_last_rfc3339'] = self._raw_record['time_last_rfc3339']
-
-        if 'meta' in self._raw_record:
-            if not isinstance(self._raw_record['meta'], dict):
-                raise PDNSRecordTypeError('meta', 'dict', self._raw_record["meta"])
-            to_return['meta'] = self._raw_record['meta']
+        for name, expected_type in _optional_fields.items():
+            if name not in raw:
+                continue
+            value = raw[name]
+            if not isinstance(value, expected_type):
+                raise PDNSRecordTypeError(name, expected_type.__name__, value)
+            to_return[name] = value  # type: ignore[literal-required]
         return to_return
 
     @property
@@ -294,8 +269,9 @@ class PyPDNS:
 
         self.session: CachedSession | Session
         if enable_cache is True:
-            requests_cache.install_cache(cache_file, backend='sqlite', expire_after=cache_expire_after)
-            self.session = requests_cache.CachedSession()
+            # NOT install_cache(): that one patches requests.Session for the whole process.
+            self.session = CachedSession(cache_name=cache_file, backend='sqlite',
+                                         expire_after=cache_expire_after)
         else:
             self.session = requests.Session()
         self.session.headers['user-agent'] = useragent if useragent else f'PyPDNS / {version("pypdns")}'
@@ -322,34 +298,44 @@ class PyPDNS:
 
     def iter_query(self, q: str,
                    filter_rrtype: str | None=None,
-                   break_on_errors: bool=False) -> Generator[PDNSRecord, None, dict[str, str | int] | None]:
+                   break_on_errors: bool=False,
+                   *, page_size: int=50,
+                   timeout: int=default_timeout) -> Generator[PDNSRecord, None, dict[str, str | int] | None]:
         '''Iterate over all the recording matching your request, useful if there are a lot.
         Note: the order is non-deterministic.
 
         :param q: The query
         :param filter_rrtype: The filter, must be a valid RR Type or the response will be empty.
         :param break_on_errors: If there is an error, stop iterating and break immediately
+        :param timeout: Timeout of each HTTP request, in seconds
+        :param page_size: How many records to fetch per request. The pages are fetched
+                          sequentially, so a bigger page means fewer round trips on a big
+                          response, at the cost of more memory per response. The server
+                          may cap it to a lower value.
         '''
+        if page_size < 1:
+            raise PDNSError('page_size must be a strictly positive integer.')
         cursor = -1
-        query_headers = {'dribble-paginate-count': '50'}
+        query_headers = {'dribble-paginate-count': str(page_size)}
         if filter_rrtype:
             query_headers['dribble-filter-rrtype'] = filter_rrtype
         while True:
             if cursor > 0:
                 query_headers['dribble-paginate-cursor'] = str(cursor)
-            response: Response | CachedResponse = self.session.get(f'{self.url}/{q}', timeout=15, headers=query_headers)
+            response: Response | CachedResponse = self.session.get(f'{self.url}/{q}', timeout=timeout, headers=query_headers)
             if response.status_code != 200:
                 self._handle_http_error(response)
             if break_on_errors:
                 if e := self._handle_dribble_errors(response):
                     return e
 
+            if getattr(response, 'from_cache', False):
+                logger.debug("from cache query() q=[%s]", q)
+
             for line in response.text.split('\n'):
                 if len(line) == 0:
                     continue
                 try:
-                    if isinstance(response, CachedResponse) and response.from_cache is True:
-                        logger.debug("from cache query() q=[%s]", q)
                     obj = json.loads(line)
                 except Exception:
                     logger.exception("except query() q=[%s]", q)
@@ -363,7 +349,8 @@ class PyPDNS:
 
     def _query(self, q: str, sort_by: str = 'time_last',
                *,
-               filter_rrtype: str | None=None) -> tuple[list[dict[str, str | int | bool | list[str] | dict[Any, Any] | None]],
+               filter_rrtype: str | None=None,
+               timeout: int=default_timeout) -> tuple[list[dict[str, str | int | bool | list[str] | dict[Any, Any] | None]],
                                                         dict[str, str | int]]:
         '''Internal method running a non-paginated query, can be sorted.'''
         logger.debug("start query() q=[%s]", q)
@@ -372,23 +359,29 @@ class PyPDNS:
         query_headers = {}
         if filter_rrtype:
             query_headers['dribble-filter-rrtype'] = filter_rrtype
-        response: Response | CachedResponse = self.session.get(f'{self.url}/{q}', timeout=15, headers=query_headers)
+        response: Response | CachedResponse = self.session.get(f'{self.url}/{q}', timeout=timeout, headers=query_headers)
         if response.status_code != 200:
             self._handle_http_error(response)
         errors = self._handle_dribble_errors(response)
+        if getattr(response, 'from_cache', False):
+            logger.debug("from cache query() q=[%s]", q)
+
         to_return = []
         for line in response.text.split('\n'):
             if len(line) == 0:
                 continue
             try:
-                if isinstance(response, CachedResponse) and response.from_cache is True:
-                    logger.debug("from cache query() q=[%s]", q)
                 obj = json.loads(line)
             except Exception:
                 logger.exception("except query() q=[%s]", q)
                 raise PDNSError(f'Unable to decode JSON object: {line}')
             to_return.append(obj)
-        to_return = sorted(to_return, key=lambda k: k[sort_by])
+        try:
+            to_return.sort(key=lambda k: k[sort_by])
+        except KeyError:
+            raise PDNSError(f'Unable to sort by "{sort_by}": some records do not have that key.')
+        except TypeError:
+            raise PDNSError(f'Unable to sort by "{sort_by}": records have mixed types for that key.')
         return to_return, errors
 
     @overload
@@ -396,6 +389,7 @@ class PyPDNS:
                   *,
                   sort_by: str = 'time_last',
                   filter_rrtype: str | None= None,
+                  timeout: int=default_timeout,
                   with_errors: Literal[True]) -> tuple[list[PDNSRecord], dict[str, str | int]]:
         pass
 
@@ -404,6 +398,7 @@ class PyPDNS:
                   *,
                   sort_by: str = 'time_last',
                   filter_rrtype: str | None= None,
+                  timeout: int=default_timeout,
                   with_errors: Literal[False]) -> list[PDNSRecord]:
         pass
 
@@ -411,15 +406,17 @@ class PyPDNS:
                   *,
                   sort_by: str = 'time_last',
                   filter_rrtype: str | None= None,
+                  timeout: int=default_timeout,
                   with_errors: bool=False) -> list[PDNSRecord] | tuple[list[PDNSRecord], dict[str, str | int]]:
         '''Triggers a non-paginated query, can be sorted but will raise an error if the response is too big.
 
         :param q: The query
         :param sort_by: The key to use to sort the records
         :param filter_rrtype: The filter, must be a valid RR Type or the response will be enpty.
+        :param timeout: Timeout of the HTTP request, in seconds
         :param with_errors: Returns the errors (if any)
         '''
-        records, errors = self._query(q, sort_by, filter_rrtype=filter_rrtype)
+        records, errors = self._query(q, sort_by, filter_rrtype=filter_rrtype, timeout=timeout)
         to_return_records = [PDNSRecord(record) for record in records]
         if not with_errors:
             return to_return_records
@@ -430,7 +427,8 @@ class PyPDNS:
         It was a bad design decision years ago. Use rfc_query instead for something saner.
         This method is deprecated.
         '''
-        records, errors = self._query(q, sort_by)
+        records, errors = self._query(q, sort_by,
+                                      timeout=timeout if timeout is not None else default_timeout)
         for record in records:
             record['time_first'] = datetime.fromtimestamp(record['time_first'], timezone.utc)  # type: ignore
             record['time_last'] = datetime.fromtimestamp(record['time_last'], timezone.utc)  # type: ignore
