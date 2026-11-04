@@ -7,13 +7,13 @@ authors = [
 ]
 license = "GPL-3.0+"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 dynamic = [ "classifiers" ]
 
 dependencies = [
-    "requests-cache (>=1.3.2)",
-    "dnspython (>=2.8.0)"
+    "requests-cache (>=1.3.3)",
+    "dnspython (>=2.9.1)"
 ]
 
 [project.urls]
@@ -34,12 +34,12 @@ classifiers = [
 pdns = 'pypdns:main'
 
 [project.optional-dependencies]
-docs = [ "sphinx (>=9.1.0) ; python_version >= \"3.12\"" ]
+docs = [ "sphinx (>=9.2.0) ; python_version >= \"3.13\"" ]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^2.1.0"
-types-requests = "^2.33.0.20260518"
-pytest = "^9.0.3"
+mypy = "^2.4.1"
+types-requests = "^2.33.0.20261030"
+pytest = "^9.2.0"
 
 [build-system]
 requires = ["poetry-core>=2.0"]
