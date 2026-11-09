@@ -13,7 +13,7 @@ dynamic = [ "classifiers" ]
 
 dependencies = [
     "requests-cache (>=1.3.3)",
-    "dnspython (>=2.9.1)"
+    "dnspython (>=2.9.2)"
 ]
 
 [project.urls]
